@@ -1,11 +1,24 @@
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 if CoreGui:FindFirstChild("BrainrotGUI") then
     CoreGui.BrainrotGUI:Destroy()
 end
+
+-- Gameplay Paused ekranını engelleme denemesi
+pcall(function()
+    for _, gui in ipairs(CoreGui:GetDescendants()) do
+        if gui:IsA("TextLabel") and gui.Text:find("Gameplay Paused") then
+            local parentFrame = gui.Parent.Parent
+            if parentFrame and parentFrame:IsA("GuiObject") then
+                parentFrame.Visible = false
+            end
+        end
+    end
+end)
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BrainrotGUI"
@@ -25,7 +38,7 @@ UICorner.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundTransparency = 1
-Title.Text = "Brainrot Farm"
+Title.Text = "Brainrot Farm [B]"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 Title.Font = Enum.Font.GothamBold
@@ -44,6 +57,41 @@ local BtnCorner = Instance.new("UICorner")
 BtnCorner.CornerRadius = UDim.new(0, 6)
 BtnCorner.Parent = ToggleBtn
 
+-- GUI Sürükleme (Draggable) Özelliği
+local dragging, dragInput, dragStart, startPos
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
 local AUTO_FARM_ENABLED = false
 local SPAWN_BASE_POS = Vector3.new(-23, 3, -38)
 local FARM_AREA_POS = Vector3.new(79, 3, 6155)
@@ -53,10 +101,24 @@ local function getRootPart()
     return character:WaitForChild("HumanoidRootPart", 5)
 end
 
+local function toggleFarm()
+    AUTO_FARM_ENABLED = not AUTO_FARM_ENABLED
+    
+    if AUTO_FARM_ENABLED then
+        ToggleBtn.Text = "Farm: ON"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+    else
+        ToggleBtn.Text = "Farm: OFF"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    end
+end
+
+-- Farm Döngüsü
 task.spawn(function()
     while true do
         if AUTO_FARM_ENABLED then
             pcall(function()
+                -- 1. Para Toplama
                 for _, v in ipairs(Workspace:GetDescendants()) do
                     if not AUTO_FARM_ENABLED then break end
                     if v.Name:lower():find("cash") or v.Name:lower():find("money") then
@@ -65,35 +127,53 @@ task.spawn(function()
                             if rootPart then
                                 local oldPos = rootPart.CFrame
                                 rootPart.CFrame = v.CFrame
-                                task.wait(0.2)
+                                task.wait(0.6)
                                 rootPart.CFrame = oldPos
-                            end
-                        end
-                    end
-                end
-
-                local rootPart = getRootPart()
-                if rootPart and AUTO_FARM_ENABLED then
-                    rootPart.CFrame = CFrame.new(FARM_AREA_POS)
-                    task.wait(0.5)
-                    
-                    for _, obj in ipairs(Workspace:GetDescendants()) do
-                        if not AUTO_FARM_ENABLED then break end
-                        if obj:IsA("BasePart") and (obj.Position - FARM_AREA_POS).Magnitude < 60 then
-                            local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt") or obj.Parent:FindFirstChildWhichIsA("ProximityPrompt")
-                            if prompt then
-                                rootPart.CFrame = obj.CFrame + Vector3.new(0, 3, 0)
-                                task.wait(0.2)
-                                pcall(function() fireproximityprompt(prompt) end)
                                 task.wait(0.3)
                             end
                         end
                     end
                 end
 
+                -- 2. Brainrot Toplama
+                local rootPart = getRootPart()
+                if rootPart and AUTO_FARM_ENABLED then
+                    rootPart.CFrame = CFrame.new(FARM_AREA_POS)
+                    task.wait(1.5)
+                    
+                    local collectedAny = true
+                    local loops = 0
+                    
+                    while AUTO_FARM_ENABLED and collectedAny and loops < 10 do
+                        collectedAny = false
+                        loops = loops + 1
+                        
+                        for _, obj in ipairs(Workspace:GetDescendants()) do
+                            if not AUTO_FARM_ENABLED then break end
+                            
+                            if obj:IsA("BasePart") and (obj.Position - FARM_AREA_POS).Magnitude < 80 then
+                                local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt") or obj.Parent:FindFirstChildWhichIsA("ProximityPrompt")
+                                
+                                if prompt and prompt.Enabled then
+                                    collectedAny = true
+                                    rootPart.CFrame = obj.CFrame + Vector3.new(0, 3, 0)
+                                    task.wait(0.5)
+                                    
+                                    pcall(function()
+                                        fireproximityprompt(prompt)
+                                    end)
+                                    task.wait(0.6)
+                                end
+                            end
+                        end
+                        task.wait(0.5)
+                    end
+                end
+
+                -- 3. Base, Yerleştirme ve İleri Geri Hareket Etme
                 if AUTO_FARM_ENABLED and rootPart then
                     rootPart.CFrame = CFrame.new(SPAWN_BASE_POS)
-                    task.wait(0.5)
+                    task.wait(1.0)
                     
                     pcall(function()
                         for _, gui in ipairs(LocalPlayer.PlayerGui:GetDescendants()) do
@@ -105,22 +185,28 @@ task.spawn(function()
                             end
                         end
                     end)
-                    task.wait(0.3)
+                    
+                    -- Spawnda 5 saniye bekleme ve ileri geri hareket simülasyonu
+                    for i = 1, 5 do
+                        if not AUTO_FARM_ENABLED then break end
+                        if i == 1 then
+                            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0, 3) -- İleri
+                        elseif i == 3 then
+                            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0, -3) -- Geri
+                        end
+                        task.wait(1)
+                    end
                 end
             end)
         end
-        task.wait(1)
+        task.wait(2)
     end
 end)
 
-ToggleBtn.MouseButton1Click:Connect(function()
-    AUTO_FARM_ENABLED = not AUTO_FARM_ENABLED
-    
-    if AUTO_FARM_ENABLED then
-        ToggleBtn.Text = "Farm: ON"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-    else
-        ToggleBtn.Text = "Farm: OFF"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+ToggleBtn.MouseButton1Click:Connect(toggleFarm)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.B then
+        toggleFarm()
     end
 end)
