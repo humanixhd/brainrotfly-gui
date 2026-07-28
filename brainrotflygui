@@ -8,7 +8,6 @@ if CoreGui:FindFirstChild("BrainrotGUI") then
     CoreGui.BrainrotGUI:Destroy()
 end
 
--- Gameplay Paused ekranını engelleme denemesi
 pcall(function()
     for _, gui in ipairs(CoreGui:GetDescendants()) do
         if gui:IsA("TextLabel") and gui.Text:find("Gameplay Paused") then
@@ -25,7 +24,7 @@ ScreenGui.Name = "BrainrotGUI"
 ScreenGui.Parent = CoreGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 200, 0, 100)
+MainFrame.Size = UDim2.new(0, 200, 0, 140)
 MainFrame.Position = UDim2.new(0.5, -100, 0.1, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 MainFrame.BorderSizePixel = 0
@@ -45,19 +44,41 @@ Title.Font = Enum.Font.GothamBold
 Title.Parent = MainFrame
 
 local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0.8, 0, 0, 40)
-ToggleBtn.Position = UDim2.new(0.1, 0, 0.45, 0)
+ToggleBtn.Size = UDim2.new(0.8, 0, 0, 35)
+ToggleBtn.Position = UDim2.new(0.1, 0, 0.25, 0)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 ToggleBtn.Text = "Farm: OFF"
 ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBtn.TextSize, ToggleBtn.Font = 14, Enum.Font.GothamBold
+ToggleBtn.TextSize, ToggleBtn.Font = 13, Enum.Font.GothamBold
 ToggleBtn.Parent = MainFrame
 
 local BtnCorner = Instance.new("UICorner")
 BtnCorner.CornerRadius = UDim.new(0, 6)
 BtnCorner.Parent = ToggleBtn
 
--- GUI Sürükleme (Draggable) Özelliği
+local LagBtn = Instance.new("TextButton")
+LagBtn.Size = UDim2.new(0.8, 0, 0, 35)
+LagBtn.Position = UDim2.new(0.1, 0, 0.53, 0)
+LagBtn.BackgroundColor3 = Color3.fromRGB(50, 100, 200)
+LagBtn.Text = "White Screen: OFF [V]"
+LagBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+LagBtn.TextSize, LagBtn.Font = 11, Enum.Font.GothamBold
+LagBtn.Parent = MainFrame
+
+local LagCorner = Instance.new("UICorner")
+LagCorner.CornerRadius = UDim.new(0, 6)
+LagCorner.Parent = LagBtn
+
+local CreditLabel = Instance.new("TextLabel")
+CreditLabel.Size = UDim2.new(1, 0, 0, 20)
+CreditLabel.Position = UDim2.new(0, 0, 0.82, 0)
+CreditLabel.BackgroundTransparency = 1
+CreditLabel.Text = "Script made by roblox @Noob_Delisi"
+CreditLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+CreditLabel.TextSize = 9
+CreditLabel.Font = Enum.Font.GothamItalic
+CreditLabel.Parent = MainFrame
+
 local dragging, dragInput, dragStart, startPos
 
 MainFrame.InputBegan:Connect(function(input)
@@ -93,12 +114,18 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 local AUTO_FARM_ENABLED = false
+local LAG_REDUCE_ENABLED = false
 local SPAWN_BASE_POS = Vector3.new(-23, 3, -38)
 local FARM_AREA_POS = Vector3.new(79, 3, 6155)
 
 local function getRootPart()
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     return character:WaitForChild("HumanoidRootPart", 5)
+end
+
+local function getHumanoid()
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    return character:WaitForChild("Humanoid", 5)
 end
 
 local function toggleFarm()
@@ -113,12 +140,34 @@ local function toggleFarm()
     end
 end
 
--- Farm Döngüsü
+local WhiteScreenGui = Instance.new("ScreenGui")
+WhiteScreenGui.Name = "WhiteScreenGui"
+WhiteScreenGui.Parent = CoreGui
+WhiteScreenGui.Enabled = false
+
+local WhiteFrame = Instance.new("Frame")
+WhiteFrame.Size = UDim2.new(1, 0, 1, 0)
+WhiteFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+WhiteFrame.Parent = WhiteScreenGui
+
+local function toggleLagReduce()
+    LAG_REDUCE_ENABLED = not LAG_REDUCE_ENABLED
+    
+    if LAG_REDUCE_ENABLED then
+        LagBtn.Text = "White Screen: ON [V]"
+        LagBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+        WhiteScreenGui.Enabled = true
+    else
+        LagBtn.Text = "White Screen: OFF [V]"
+        LagBtn.BackgroundColor3 = Color3.fromRGB(50, 100, 200)
+        WhiteScreenGui.Enabled = false
+    end
+end
+
 task.spawn(function()
     while true do
         if AUTO_FARM_ENABLED then
             pcall(function()
-                -- 1. Para Toplama
                 for _, v in ipairs(Workspace:GetDescendants()) do
                     if not AUTO_FARM_ENABLED then break end
                     if v.Name:lower():find("cash") or v.Name:lower():find("money") then
@@ -127,7 +176,7 @@ task.spawn(function()
                             if rootPart then
                                 local oldPos = rootPart.CFrame
                                 rootPart.CFrame = v.CFrame
-                                task.wait(0.6)
+                                task.wait(0.4)
                                 rootPart.CFrame = oldPos
                                 task.wait(0.3)
                             end
@@ -135,7 +184,6 @@ task.spawn(function()
                     end
                 end
 
-                -- 2. Brainrot Toplama
                 local rootPart = getRootPart()
                 if rootPart and AUTO_FARM_ENABLED then
                     rootPart.CFrame = CFrame.new(FARM_AREA_POS)
@@ -170,7 +218,6 @@ task.spawn(function()
                     end
                 end
 
-                -- 3. Base, Yerleştirme ve İleri Geri Hareket Etme
                 if AUTO_FARM_ENABLED and rootPart then
                     rootPart.CFrame = CFrame.new(SPAWN_BASE_POS)
                     task.wait(1.0)
@@ -186,14 +233,20 @@ task.spawn(function()
                         end
                     end)
                     
-                    -- Spawnda 5 saniye bekleme ve ileri geri hareket simülasyonu
+                    local humanoid = getHumanoid()
                     for i = 1, 5 do
                         if not AUTO_FARM_ENABLED then break end
-                        if i == 1 then
-                            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0, 3) -- İleri
-                        elseif i == 3 then
-                            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0, -3) -- Geri
+                        
+                        if humanoid then
+                            humanoid.Jump = true
                         end
+                        
+                        if i == 2 then
+                            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0, 3)
+                        elseif i == 4 then
+                            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0, -3)
+                        end
+                        
                         task.wait(1)
                     end
                 end
@@ -204,9 +257,14 @@ task.spawn(function()
 end)
 
 ToggleBtn.MouseButton1Click:Connect(toggleFarm)
+LagBtn.MouseButton1Click:Connect(toggleLagReduce)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.B then
-        toggleFarm()
+    if not gameProcessed then
+        if input.KeyCode == Enum.KeyCode.B then
+            toggleFarm()
+        elseif input.KeyCode == Enum.KeyCode.V then
+            toggleLagReduce()
+        end
     end
 end)
