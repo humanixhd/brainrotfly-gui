@@ -1,0 +1,137 @@
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
+local LocalPlayer = Players.LocalPlayer
+
+-- Eğer daha önce açılmış bir menü varsa kapat
+if CoreGui:FindFirstChild("BrainrotGUI") then
+    CoreGui.BrainrotGUI:Destroy()
+end
+
+-- Ana Ekran (ScreenGui)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BrainrotGUI"
+ScreenGui.Parent = CoreGui
+
+-- Ana Çerçeve (Frame)
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 200, 0, 100)
+MainFrame.Position = UDim2.new(0.5, -100, 0.1, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = MainFrame
+
+-- Başlık
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundTransparency = 1
+Title.Text = "Brainrot Farm"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 14
+Title.Font = Enum.Font.GothamBold
+Title.Parent = MainFrame
+
+-- Toggle Butonu (Aç/Kapat)
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0.8, 0, 0, 40)
+ToggleBtn.Position = UDim2.new(0.1, 0, 0.45, 0)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- Kapalıyken kırmızı
+ToggleBtn.Text = "Farm: OFF"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.TextSize, ToggleBtn.Font = 14, Enum.Font.GothamBold
+ToggleBtn.Parent = MainFrame
+
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(0, 6)
+BtnCorner.Parent = ToggleBtn
+
+-- Farm Mantığı Değişkenleri
+local AUTO_FARM_ENABLED = false
+local SPAWN_BASE_POS = Vector3.new(-23, 3, -38)
+local FARM_AREA_POS = Vector3.new(79, 3, 6155)
+
+local function getRootPart()
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    return character:WaitForChild("HumanoidRootPart", 5)
+end
+
+-- Farm Döngüsü
+task.spawn(function()
+    while true do
+        if AUTO_FARM_ENABLED then
+            pcall(function()
+                -- 1. Para Toplama
+                for _, v in ipairs(Workspace:GetDescendants()) do
+                    if not AUTO_FARM_ENABLED then break end
+                    if v.Name:lower():find("cash") or v.Name:lower():find("money") then
+                        if v:IsA("BasePart") then
+                            local rootPart = getRootPart()
+                            if rootPart then
+                                local oldPos = rootPart.CFrame
+                                rootPart.CFrame = v.CFrame
+                                task.wait(0.2)
+                                rootPart.CFrame = oldPos
+                            end
+                        end
+                    end
+                end
+
+                -- 2. Brainrot Toplama
+                local rootPart = getRootPart()
+                if rootPart and AUTO_FARM_ENABLED then
+                    rootPart.CFrame = CFrame.new(FARM_AREA_POS)
+                    task.wait(0.5)
+                    
+                    for _, obj in ipairs(Workspace:GetDescendants()) do
+                        if not AUTO_FARM_ENABLED then break end
+                        if obj:IsA("BasePart") and (obj.Position - FARM_AREA_POS).Magnitude < 60 then
+                            local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt") or obj.Parent:FindFirstChildWhichIsA("ProximityPrompt")
+                            if prompt then
+                                rootPart.CFrame = obj.CFrame + Vector3.new(0, 3, 0)
+                                task.wait(0.2)
+                                pcall(function() fireproximityprompt(prompt) end)
+                                task.wait(0.3)
+                            end
+                        end
+                    end
+                end
+
+                -- 3. Base ve Yerleştirme
+                if AUTO_FARM_ENABLED and rootPart then
+                    rootPart.CFrame = CFrame.new(SPAWN_BASE_POS)
+                    task.wait(0.5)
+                    
+                    pcall(function()
+                        for _, gui in ipairs(LocalPlayer.PlayerGui:GetDescendants()) do
+                            if gui:IsA("TextButton") or gui:IsA("ImageButton") then
+                                local name = gui.Name:lower()
+                                if name:find("best") or name:find("place") or name:find("auto") then
+                                    firesignal(gui.MouseButton1Click)
+                                end
+                            end
+                        end
+                    end)
+                    task.wait(0.3)
+                end
+            end)
+        end
+        task.wait(1)
+    end
+end)
+
+-- Butona Basma Olayı (Toggle)
+ToggleBtn.MouseButton1Click:Connect(function()
+    AUTO_FARM_ENABLED = not AUTO_FARM_ENABLED
+    
+    if AUTO_FARM_ENABLED then
+        ToggleBtn.Text = "Farm: ON"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50) -- Açıkken yeşil
+    else
+        ToggleBtn.Text = "Farm: OFF"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- Kapalıyken kırmızı
+    end
+end)
