@@ -8,7 +8,7 @@ if CoreGui:FindFirstChild("BrainrotGUI") then
     CoreGui.BrainrotGUI:Destroy()
 end
 
--- Gameplay Paused ekranını kapatma denemesi
+-- Gameplay Paused ekranını engelleme denemesi
 pcall(function()
     for _, gui in ipairs(CoreGui:GetDescendants()) do
         if gui:IsA("TextLabel") and gui.Text:find("Gameplay Paused") then
@@ -35,7 +35,6 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = MainFrame
 
--- Başlık (Sürükleme alanı olarak da kullanılacak)
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundTransparency = 1
@@ -102,7 +101,6 @@ local function getRootPart()
     return character:WaitForChild("HumanoidRootPart", 5)
 end
 
--- Aç/Kapat Fonksiyonu
 local function toggleFarm()
     AUTO_FARM_ENABLED = not AUTO_FARM_ENABLED
     
@@ -115,12 +113,12 @@ local function toggleFarm()
     end
 end
 
--- Farm Döngüsü (Yavaşlatılmış ve güvenli bekleme süreleriyle)
+-- Farm Döngüsü
 task.spawn(function()
     while true do
         if AUTO_FARM_ENABLED then
             pcall(function()
-                -- 1. Para Toplama
+                -- 1. Para Toplama (Daha yavaşlatıldı)
                 for _, v in ipairs(Workspace:GetDescendants()) do
                     if not AUTO_FARM_ENABLED then break end
                     if v.Name:lower():find("cash") or v.Name:lower():find("money") then
@@ -129,38 +127,54 @@ task.spawn(function()
                             if rootPart then
                                 local oldPos = rootPart.CFrame
                                 rootPart.CFrame = v.CFrame
-                                task.wait(0.4)
+                                task.wait(0.6)
                                 rootPart.CFrame = oldPos
-                                task.wait(0.2)
+                                task.wait(0.3)
                             end
                         end
                     end
                 end
 
-                -- 2. Brainrot Toplama
+                -- 2. Brainrot Toplama (Bölgedeki TÜM nesneler bitene kadar döngüde kalır)
                 local rootPart = getRootPart()
                 if rootPart and AUTO_FARM_ENABLED then
                     rootPart.CFrame = CFrame.new(FARM_AREA_POS)
-                    task.wait(1.0)
+                    task.wait(1.5) -- Bölgeye varış ve yüklenme beklemesi
                     
-                    for _, obj in ipairs(Workspace:GetDescendants()) do
-                        if not AUTO_FARM_ENABLED then break end
-                        if obj:IsA("BasePart") and (obj.Position - FARM_AREA_POS).Magnitude < 60 then
-                            local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt") or obj.Parent:FindFirstChildWhichIsA("ProximityPrompt")
-                            if prompt then
-                                rootPart.CFrame = obj.CFrame + Vector3.new(0, 3, 0)
-                                task.wait(0.4)
-                                pcall(function() fireproximityprompt(prompt) end)
-                                task.wait(0.5)
+                    local collectedAny = true
+                    local loops = 0
+                    
+                    -- Bölgede toplanacak nesne kalmayana kadar veya yeni gelenler bitene kadar tara
+                    while AUTO_FARM_ENABLED and collectedAny and loops < 10 do
+                        collectedAny = false
+                        loops = loops + 1
+                        
+                        for _, obj in ipairs(Workspace:GetDescendants()) do
+                            if not AUTO_FARM_ENABLED then break end
+                            
+                            if obj:IsA("BasePart") and (obj.Position - FARM_AREA_POS).Magnitude < 80 then
+                                local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt") or obj.Parent:FindFirstChildWhichIsA("ProximityPrompt")
+                                
+                                if prompt and prompt.Enabled then
+                                    collectedAny = true
+                                    rootPart.CFrame = obj.CFrame + Vector3.new(0, 3, 0)
+                                    task.wait(0.5) -- Her nesne alış arası güvenli bekleme
+                                    
+                                    pcall(function()
+                                        fireproximityprompt(prompt)
+                                    end)
+                                    task.wait(0.6)
+                                end
                             end
                         end
+                        task.wait(0.5) -- Yeni doğanlar için kısa bir tarama aralığı
                     end
                 end
 
                 -- 3. Base ve Yerleştirme
                 if AUTO_FARM_ENABLED and rootPart then
-                    rootPart.CFrame = CGrade and CFrame.new(SPAWN_BASE_POS) or CFrame.new(SPAWN_BASE_POS)
-                    task.wait(1.0)
+                    rootPart.CFrame = CFrame.new(SPAWN_BASE_POS)
+                    task.wait(1.5)
                     
                     pcall(function()
                         for _, gui in ipairs(LocalPlayer.PlayerGui:GetDescendants()) do
@@ -172,7 +186,7 @@ task.spawn(function()
                             end
                         end
                     end)
-                    task.wait(0.5)
+                    task.wait(1.0)
                 end
             end)
         end
@@ -180,10 +194,8 @@ task.spawn(function()
     end
 end)
 
--- Fare ile butona tıklama
 ToggleBtn.MouseButton1Click:Connect(toggleFarm)
 
--- Klavyeden B tuşuna basarak açıp kapatma
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.B then
         toggleFarm()
