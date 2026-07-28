@@ -8,6 +8,7 @@ if CoreGui:FindFirstChild("BrainrotGUI") then
     CoreGui.BrainrotGUI:Destroy()
 end
 
+-- Gameplay Paused ekranını kapatma denemesi
 pcall(function()
     for _, gui in ipairs(CoreGui:GetDescendants()) do
         if gui:IsA("TextLabel") and gui.Text:find("Gameplay Paused") then
@@ -34,6 +35,7 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = MainFrame
 
+-- Başlık (Sürükleme alanı olarak da kullanılacak)
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundTransparency = 1
@@ -56,6 +58,41 @@ local BtnCorner = Instance.new("UICorner")
 BtnCorner.CornerRadius = UDim.new(0, 6)
 BtnCorner.Parent = ToggleBtn
 
+-- GUI Sürükleme (Draggable) Özelliği
+local dragging, dragInput, dragStart, startPos
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
 local AUTO_FARM_ENABLED = false
 local SPAWN_BASE_POS = Vector3.new(-23, 3, -38)
 local FARM_AREA_POS = Vector3.new(79, 3, 6155)
@@ -65,7 +102,7 @@ local function getRootPart()
     return character:WaitForChild("HumanoidRootPart", 5)
 end
 
--- Aç/Kapat işlemini tek bir fonksiyonda topladık
+-- Aç/Kapat Fonksiyonu
 local function toggleFarm()
     AUTO_FARM_ENABLED = not AUTO_FARM_ENABLED
     
@@ -78,10 +115,12 @@ local function toggleFarm()
     end
 end
 
+-- Farm Döngüsü (Yavaşlatılmış ve güvenli bekleme süreleriyle)
 task.spawn(function()
     while true do
         if AUTO_FARM_ENABLED then
             pcall(function()
+                -- 1. Para Toplama
                 for _, v in ipairs(Workspace:GetDescendants()) do
                     if not AUTO_FARM_ENABLED then break end
                     if v.Name:lower():find("cash") or v.Name:lower():find("money") then
@@ -98,6 +137,7 @@ task.spawn(function()
                     end
                 end
 
+                -- 2. Brainrot Toplama
                 local rootPart = getRootPart()
                 if rootPart and AUTO_FARM_ENABLED then
                     rootPart.CFrame = CFrame.new(FARM_AREA_POS)
@@ -117,8 +157,9 @@ task.spawn(function()
                     end
                 end
 
+                -- 3. Base ve Yerleştirme
                 if AUTO_FARM_ENABLED and rootPart then
-                    rootPart.CFrame = CFrame.new(SPAWN_BASE_POS)
+                    rootPart.CFrame = CGrade and CFrame.new(SPAWN_BASE_POS) or CFrame.new(SPAWN_BASE_POS)
                     task.wait(1.0)
                     
                     pcall(function()
@@ -142,7 +183,7 @@ end)
 -- Fare ile butona tıklama
 ToggleBtn.MouseButton1Click:Connect(toggleFarm)
 
--- Klavyeden B tuşuna basınca tetikleme
+-- Klavyeden B tuşuna basarak açıp kapatma
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.B then
         toggleFarm()
