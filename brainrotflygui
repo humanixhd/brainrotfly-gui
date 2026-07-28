@@ -2,23 +2,11 @@ local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
-local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 
 if CoreGui:FindFirstChild("BrainrotGUI") then
     CoreGui.BrainrotGUI:Destroy()
 end
-
-pcall(function()
-    for _, gui in ipairs(CoreGui:GetDescendants()) do
-        if gui:IsA("TextLabel") and gui.Text:find("Gameplay Paused") then
-            local parentFrame = gui.Parent.Parent
-            if parentFrame and parentFrame:IsA("GuiObject") then
-                parentFrame.Visible = false
-            end
-        end
-    end
-end)
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BrainrotGUI"
@@ -141,30 +129,27 @@ local function toggleFarm()
     end
 end
 
+local WhiteScreenGui = Instance.new("ScreenGui")
+WhiteScreenGui.Name = "WhiteScreenGui"
+WhiteScreenGui.Parent = CoreGui
+WhiteScreenGui.Enabled = false
+
+local WhiteFrame = Instance.new("Frame")
+WhiteFrame.Size = UDim2.new(1, 0, 1, 0)
+WhiteFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+WhiteFrame.Parent = WhiteScreenGui
+
 local function toggleLagReduce()
     LAG_REDUCE_ENABLED = not LAG_REDUCE_ENABLED
     
     if LAG_REDUCE_ENABLED then
         LagBtn.Text = "White Screen: ON [V]"
         LagBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-        
-        pcall(function()
-            settings():GetService("RenderSettings").QualityLevel = Enum.QualityLevel.Level01
-            Lighting.GlobalShadows = false
-            for _, v in ipairs(Workspace:GetDescendants()) do
-                if v:IsA("BasePart") then
-                    v.Material = Enum.Material.SmoothPlastic
-                    v.Reflectance = 0
-                end
-            end
-        end)
+        WhiteScreenGui.Enabled = true
     else
         LagBtn.Text = "White Screen: OFF [V]"
         LagBtn.BackgroundColor3 = Color3.fromRGB(50, 100, 200)
-        pcall(function()
-            Lighting.GlobalShadows = true
-            settings():GetService("RenderSettings").QualityLevel = Enum.QualityLevel.Automatic
-        end)
+        WhiteScreenGui.Enabled = false
     end
 end
 
