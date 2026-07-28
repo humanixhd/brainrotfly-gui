@@ -1,7 +1,3 @@
-Harika geliştirmeler! İstediğin gibi karakterin spawna döndüğünde birkaç kez zıplamasını, **V** tuşuyla aktifleşen lag azaltıcı ekran karartma (White Screen / FPS Boost) modunu ve arayüze senin için özel imza yazısını ekledim.
-
-GitHub'daki dosyanın içeriğini aşağıdaki güncel kodla tamamen değiştirebilirsin:
-
 ```luau
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -14,7 +10,6 @@ if CoreGui:FindFirstChild("BrainrotGUI") then
     CoreGui.BrainrotGUI:Destroy()
 end
 
--- Gameplay Paused ekranını engelleme denemesi
 pcall(function()
     for _, gui in ipairs(CoreGui:GetDescendants()) do
         if gui:IsA("TextLabel") and gui.Text:find("Gameplay Paused") then
@@ -31,7 +26,7 @@ ScreenGui.Name = "BrainrotGUI"
 ScreenGui.Parent = CoreGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 200, 0, 140) -- İmza ve yeni buton için yükseklik artırıldı
+MainFrame.Size = UDim2.new(0, 200, 0, 140)
 MainFrame.Position = UDim2.new(0.5, -100, 0.1, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 MainFrame.BorderSizePixel = 0
@@ -50,7 +45,6 @@ Title.TextSize = 14
 Title.Font = Enum.Font.GothamBold
 Title.Parent = MainFrame
 
--- Farm Aç/Kapat Butonu
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0.8, 0, 0, 35)
 ToggleBtn.Position = UDim2.new(0.1, 0, 0.25, 0)
@@ -64,7 +58,6 @@ local BtnCorner = Instance.new("UICorner")
 BtnCorner.CornerRadius = UDim.new(0, 6)
 BtnCorner.Parent = ToggleBtn
 
--- Beyaz Ekran / Lag Azaltma Butonu (V tuşu)
 local LagBtn = Instance.new("TextButton")
 LagBtn.Size = UDim2.new(0.8, 0, 0, 35)
 LagBtn.Position = UDim2.new(0.1, 0, 0.53, 0)
@@ -78,7 +71,6 @@ local LagCorner = Instance.new("UICorner")
 LagCorner.CornerRadius = UDim.new(0, 6)
 LagCorner.Parent = LagBtn
 
--- Reklam / İmza Yazısı
 local CreditLabel = Instance.new("TextLabel")
 CreditLabel.Size = UDim2.new(1, 0, 0, 20)
 CreditLabel.Position = UDim2.new(0, 0, 0.82, 0)
@@ -89,7 +81,6 @@ CreditLabel.TextSize = 9
 CreditLabel.Font = Enum.Font.GothamItalic
 CreditLabel.Parent = MainFrame
 
--- GUI Sürükleme (Draggable) Özelliği
 local dragging, dragInput, dragStart, startPos
 
 MainFrame.InputBegan:Connect(function(input)
@@ -151,7 +142,6 @@ local function toggleFarm()
     end
 end
 
--- Beyaz Ekran / Lag Azaltma Fonksiyonu
 local function toggleLagReduce()
     LAG_REDUCE_ENABLED = not LAG_REDUCE_ENABLED
     
@@ -159,7 +149,6 @@ local function toggleLagReduce()
         LagBtn.Text = "White Screen: ON [V]"
         LagBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
         
-        -- FPS yükseltmek için grafikleri ve render'ı kısma
         pcall(function()
             settings():GetService("RenderSettings").QualityLevel = Enum.QualityLevel.Level01
             Lighting.GlobalShadows = false
@@ -180,12 +169,10 @@ local function toggleLagReduce()
     end
 end
 
--- Farm Döngüsü
 task.spawn(function()
     while true do
         if AUTO_FARM_ENABLED then
             pcall(function()
-                -- 1. Para Toplama
                 for _, v in ipairs(Workspace:GetDescendants()) do
                     if not AUTO_FARM_ENABLED then break end
                     if v.Name:lower():find("cash") or v.Name:lower():find("money") then
@@ -202,7 +189,6 @@ task.spawn(function()
                     end
                 end
 
-                -- 2. Brainrot Toplama
                 local rootPart = getRootPart()
                 if rootPart and AUTO_FARM_ENABLED then
                     rootPart.CFrame = CFrame.new(FARM_AREA_POS)
@@ -237,7 +223,6 @@ task.spawn(function()
                     end
                 end
 
-                -- 3. Base, Yerleştirme ve Zıplama / Hareket Etme
                 if AUTO_FARM_ENABLED and rootPart then
                     rootPart.CFrame = CFrame.new(SPAWN_BASE_POS)
                     task.wait(1.0)
@@ -253,19 +238,18 @@ task.spawn(function()
                         end
                     end)
                     
-                    -- Spawna dönünce 4-5 kez zıplama ve ileri geri hareket
                     local humanoid = getHumanoid()
                     for i = 1, 5 do
                         if not AUTO_FARM_ENABLED then break end
                         
                         if humanoid then
-                            humanoid.Jump = true -- Zıplatma
+                            humanoid.Jump = true
                         end
                         
                         if i == 2 then
-                            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0, 3) -- İleri
+                            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0, 3)
                         elseif i == 4 then
-                            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0, -3) -- Geri
+                            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0, -3)
                         end
                         
                         task.wait(1)
@@ -277,11 +261,9 @@ task.spawn(function()
     end
 end)
 
--- Buton Bağlantıları
 ToggleBtn.MouseButton1Click:Connect(toggleFarm)
 LagBtn.MouseButton1Click:Connect(toggleLagReduce)
 
--- Klavyeden B (Farm) ve V (White Screen) Tuşları
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed then
         if input.KeyCode == Enum.KeyCode.B then
